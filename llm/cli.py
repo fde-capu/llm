@@ -760,14 +760,40 @@ def prompt(
         # To ensure it can see the key
         conversation.model = model
 
+    key_aliases=[
+      ['temp', 'temperature'],
+      ['max_token', 'num_predict', 'max_output_tokens'],
+    ]
+
     # Validate options
+    adapted_options = {}
     validated_options = {}
     if options:
+        for user_key, user_value in dict(options).items():
+          faulty_key_group=[
+            alias_list for alias_list in key_aliases
+            if user_key in alias_list
+          ]
+          if user_key in dict(model.Options()):
+            adapted_options[user_key]=user_value
+          elif len(faulty_key_group):
+            for model_key in dict(model.Options()):
+              if model_key in faulty_key_group[0]:
+                adapted_options[model_key]=user_value
+                click.echo(
+                    f"Option '{user_key}' adapted to '{model_key}'.",
+                    err=True,
+                )
+          else:
+            click.echo(
+                f"Non compatible option '{user_key}' disregarded.",
+                err=True,
+            )
         # Validate with pydantic
         try:
             validated_options = dict(
                 (key, value)
-                for key, value in model.Options(**dict(options))
+                for key, value in model.Options(**adapted_options)
                 if value is not None
             )
         except pydantic.ValidationError as ex:
