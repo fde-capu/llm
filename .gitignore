@@ -9,4 +9,5 @@ venv
 .DS_Store
 .idea/
 .vscode/
-uv.lock
+uv.lockbuild
+build/
